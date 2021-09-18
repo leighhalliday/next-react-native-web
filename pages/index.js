@@ -9,9 +9,69 @@ const PI =
   );
 
 const points = (value) => {
-  return 10;
+  let score = 0;
+  for (let i = 0; i < value.length; i++) {
+    if (PI.charAt(i) === value.charAt(i)) {
+      score += 1;
+    } else {
+      return score;
+    }
+  }
+  return score;
 };
 
+const fetcher = () =>
+  fetch("/api/scores/list").then((response) => response.json());
+
 export default function Home() {
-  return <div className={styles.container}>Redis Scoreboard</div>;
+  const { data, mutate } = useSWR("scores", fetcher);
+  const [name, setName] = useState("Leigh");
+  const [value, setValue] = useState("3.14");
+
+  return (
+    <div className={styles.container}>
+      <h1 className={styles.heading}>PI Digits</h1>
+
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className={styles.input}
+      />
+
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className={styles.input}
+      />
+
+      <button
+        className={styles.button}
+        onClick={async () => {
+          const score = points(value);
+          await fetch("/api/scores/create", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name, score }),
+          });
+          mutate();
+        }}
+      >
+        Submit
+      </button>
+
+      {data && (
+        <ul>
+          {data.map((item) => (
+            <li key={item.name}>
+              {item.name} - {item.score}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
